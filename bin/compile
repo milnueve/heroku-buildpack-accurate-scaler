@@ -44,17 +44,7 @@ if [ -x \$HOME/bin/pushprox-client ]; then
   echo "Starting PushProx Client ..."
   pushprox-client --proxy-url=\${ACCURATE_SCALER_PROXY_URL} &
 else
-  echo "WARNING! PushProx Client not found. Buildpack failed to install correctly."
-fi
-
-echo -n "Looking for 'prometheus_exporter' gem: "
-prometheus_exporter_path=\$(\$HOME/bin/bundle info prometheus_exporter --path)
-if [ "\$prometheus_exporter_path" != "" ]; then
-  echo "Found in \$prometheus_exporter_path"
-  echo "Starting prometheus_exporter ..."
-  \$prometheus_exporter_path/bin/prometheus_exporter &
-else
-  echo "Not found! Please add: \"gem 'prometheus_exporter'\" to your Gemfile."
+  echo "PushProx Client not found. Buildpack failed to install correctly."
   exit 1
 fi
 SH
