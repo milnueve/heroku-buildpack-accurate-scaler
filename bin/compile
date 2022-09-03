@@ -38,7 +38,13 @@ mkdir -p $BUILD_DIR/.profile.d
 if [ ! -f $BUILD_DIR/.profile.d/accurate-scaler.sh ]; then
   arrow "Installing startup script ..."
   cat > $BUILD_DIR/.profile.d/accurate-scaler.sh <<-SH
-#!/bin/bash
+function proctype() {
+  for monitored_proctype in \$monitored_proctypes; do
+    if [[ \$DYNO =~ ^\$monitored_proctype.* ]]; then
+      echo \$monitored_proctype
+    fi
+  done
+}
 
 export PATH=\$PATH:\$HOME/bin
 
@@ -49,31 +55,21 @@ if [[ ! -x \$HOME/bin/pushprox-client ]]; then
 fi
 
 monitored_proctypes=\${ACCURATE_SCALER_MONITORED_PROCTYPES:-web worker}
-
-function proctype() {
-  for monitored_proctype in \$monitored_proctypes; do
-    if [[ \$DYNO =~ ^\$monitored_proctype.* ]]; then
-      echo \$monitored_proctype
-    fi
-  done
-}
-
 dyno_proctype=\$(proctype)
 
 # Check if dyno is running a monitored process type or notify and exit without failing
 if [[ \$dyno_proctype == "" ]]; then
   echo "AccurateScaler: Dyno '\$DYNO' is not running a monitored process type, PushProx Client won't be started."
-  exit 0
-fi
-
-echo "AccurateScaler: Detected monitored '\$dyno_proctype' process type running in dyno."
-
-# Check if add-on is (correctly) installed or notify and exit without failing
-if [[ \$ACCURATE_SCALER_PROXY_URL == "" || \$ACCURATE_SCALER_APP_ID == "" ]]; then
-  echo "AccurateScaler: Add-on config vars missing! PushProx Client won't be started."
 else
-  echo "AccurateScaler: Starting PushProx client ..."
-  pushprox-client --proxy-url="\$ACCURATE_SCALER_PROXY_URL" --fqdn "\${ACCURATE_SCALER_APP_ID}@\$(domainname -A):9394" &
+  echo "AccurateScaler: Detected monitored '\$dyno_proctype' process type running in dyno."
+
+  # Check if add-on is (correctly) installed or notify and exit without failing
+  if [[ \$ACCURATE_SCALER_PROXY_URL == "" || \$ACCURATE_SCALER_APP_ID == "" ]]; then
+    echo "AccurateScaler: Add-on config vars missing! PushProx Client won't be started."
+  else
+    echo "AccurateScaler: Starting PushProx client ..."
+    pushprox-client --proxy-url="\$ACCURATE_SCALER_PROXY_URL" --fqdn "\${ACCURATE_SCALER_APP_ID}@\$(domainname -A):9394" &
+  fi
 fi
 SH
 fi
