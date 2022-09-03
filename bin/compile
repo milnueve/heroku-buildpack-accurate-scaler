@@ -1,0 +1,58 @@
+#!/bin/sh
+
+PUSHPROX_VERSION=0.1.0
+
+BUILD_DIR=$1
+CACHE_DIR=$2
+#ENV_DIR=$3
+
+arrow() {
+  echo '----->' "$@"
+}
+
+fetch_pushprox() {
+  if [ ! -f $CACHE_DIR/pushprox-${PUSHPROX_VERSION} ]; then
+    arrow "Installing PushProx client v${PUSHPROX_VERSION} ..."
+    wget --quiet -O pushprox.tar.gz https://github.com/prometheus/prometheus/releases/download/v${PUSHPROX_VERSION}/PushProx-${PUSHPROX_VERSION}.linux-amd64.tar.gz
+    tar -xzf pushprox.tar.gz
+
+    rm -f $CACHE_DIR/pushprox-* || true
+    mv pushprox-${PUSHPROX_VERSION}.linux-amd64/pushprox-client $CACHE_DIR/pushprox-client-${PUSHPROX_VERSION}
+  else
+    arrow "PushProx Client v${PUSHPROX_VERSION} found in cache"
+  fi
+}
+
+install_pushprox_client() {
+  cp $CACHE_DIR/pushprox-client-${PUSHPROX_VERSION} $BUILD_DIR/bin/pushprox-client
+}
+
+mkdir -p "$BUILD_DIR/bin"
+
+fetch_pushprox
+install_pushprox_client
+
+mkdir -p $BUILD_DIR/.profile.d
+
+if [ ! -f $BUILD_DIR/.profile.d/accurate-scaler.sh ]; then
+  arrow "Installing $BUILD_DIR/.profile.d/accurate-scaler.sh startup script ..."
+  cat > $BUILD_DIR/.profile.d/accurate-scaler.sh <<-SH
+export PATH=\$PATH:$BUILD_DIR/bin
+
+if [ -f \$HOME/bin/pushprox-client ]; then
+  echo "Starting PushProx Client ..."
+  pushprox-client --proxy-url=\${ACCURATE_SCALER_PROXY_URL} &
+else
+  echo "PushProx Client not found. Buildpack failed to install correctly."
+  exit 1
+fi
+
+if [ \$(bundle show prometheus_exporter) ]; then
+  echo "Starting prometheus_exporter ..."
+  bundle exec prometheus_exporter &
+else
+  echo "Gem prometheus_exporter was not found. Please add: \"gem 'prometheus_exporter'\" to your Gemfile."
+  exit 1
+fi
+SH
+fi
