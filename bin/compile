@@ -68,7 +68,7 @@ else
     echo "AccurateScaler: Add-on config vars missing! PushProx Client won't be started."
   else
     echo "AccurateScaler: Starting PushProx client ..."
-    pushprox-client --proxy-url="\$ACCURATE_SCALER_PROXY_URL" --fqdn "\${ACCURATE_SCALER_APP_ID}@\$(domainname -A | tr -d ' '):9394" &
+    pushprox-client --proxy-url="\$ACCURATE_SCALER_PROXY_URL" --fqdn "\${ACCURATE_SCALER_APP_ID}_\$(domainname -A | tr -d ' '):9394" &
   fi
 fi
 SH
