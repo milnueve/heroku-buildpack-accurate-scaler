@@ -38,7 +38,7 @@ mkdir -p $BUILD_DIR/.profile.d
 if [ ! -f $BUILD_DIR/.profile.d/accurate-scaler.sh ]; then
   arrow "Installing startup script ..."
   cat > $BUILD_DIR/.profile.d/accurate-scaler.sh <<-SH
-export PATH=\$PATH:\$HOME/bin
+export PATH=\$HOME/bin:\$PATH
 
 if [ -x \$HOME/bin/pushprox-client ]; then
   echo "Starting PushProx Client ..."
