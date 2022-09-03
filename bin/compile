@@ -68,7 +68,7 @@ fi
 echo "AccurateScaler: Detected monitored '\$dyno_proctype' process type running in dyno."
 
 # Check if add-on is (correctly) installed or notify and exit without failing
-if [ "\$ACCURATE_SCALER_PROXY_URL" != "" && "\$ACCURATE_SCALER_APP_ID" != "" ]; then
+if [ "\$ACCURATE_SCALER_PROXY_URL" != "" -a "\$ACCURATE_SCALER_APP_ID" != "" ]; then
   echo "AccurateScaler: Starting PushProx client ..."
   pushprox-client --proxy-url=\${ACCURATE_SCALER_PROXY_URL} --fqdn "\${ACCURATE_SCALER_APP_ID}@\$(domainname -A):9394" &
 else
