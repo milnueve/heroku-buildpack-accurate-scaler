@@ -13,7 +13,7 @@ arrow() {
 fetch_pushprox() {
   if [ ! -f $CACHE_DIR/pushprox-${PUSHPROX_VERSION} ]; then
     arrow "Installing PushProx client v${PUSHPROX_VERSION} ..."
-    wget --quiet -O pushprox.tar.gz https://github.com/prometheus/prometheus/releases/download/v${PUSHPROX_VERSION}/PushProx-${PUSHPROX_VERSION}.linux-amd64.tar.gz
+    wget --quiet -O pushprox.tar.gz https://github.com/prometheus-community/PushProx/releases/download/v${PUSHPROX_VERSION}/PushProx-${PUSHPROX_VERSION}.linux-amd64.tar.gz
     tar -xzf pushprox.tar.gz
 
     rm -f $CACHE_DIR/pushprox-* || true
