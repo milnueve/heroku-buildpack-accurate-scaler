@@ -48,7 +48,7 @@ else
 fi
 
 echo -n "Looking for 'prometheus_exporter' gem: "
-prometheus_exporter_path=\$(bundle info prometheus_exporter --path)
+prometheus_exporter_path=\$(\$HOME/bin/bundle info prometheus_exporter --path)
 if [ "\$prometheus_exporter_path" != "" ]; then
   echo "Found in \$prometheus_exporter_path"
   echo "Starting prometheus_exporter ..."
