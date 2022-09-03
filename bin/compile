@@ -43,7 +43,7 @@ if [ ! -f $BUILD_DIR/.profile.d/accurate-scaler.sh ]; then
 export PATH=\$PATH:\$HOME/bin
 
 # Check if buildpack was correctly installed or exit with failure
-if [ ! -x \$HOME/bin/pushprox-client ]; then
+if [[ ! -x \$HOME/bin/pushprox-client ]]; then
   echo "PushProx Client not found. Buildpack failed to install correctly."
   exit 1
 fi
@@ -61,7 +61,7 @@ function proctype() {
 dyno_proctype=\$(proctype)
 
 # Check if dyno is running a monitored process type or notify and exit without failing
-if [ "\$dyno_proctype" == "" ]; then
+if [[ \$dyno_proctype == "" ]]; then
   echo "AccurateScaler: Dyno '\$DYNO' is not running a monitored process type, PushProx Client won't be started."
   exit 0
 fi
@@ -69,11 +69,11 @@ fi
 echo "AccurateScaler: Detected monitored '\$dyno_proctype' process type running in dyno."
 
 # Check if add-on is (correctly) installed or notify and exit without failing
-if [ "\$ACCURATE_SCALER_PROXY_URL" != "" -a "\$ACCURATE_SCALER_APP_ID" != "" ]; then
-  echo "AccurateScaler: Starting PushProx client ..."
-  pushprox-client --proxy-url=\${ACCURATE_SCALER_PROXY_URL} --fqdn "\${ACCURATE_SCALER_APP_ID}@\$(domainname -A):9394" &
-else
+if [[ \$ACCURATE_SCALER_PROXY_URL == "" || \$ACCURATE_SCALER_APP_ID == "" ]]; then
   echo "AccurateScaler: Add-on config vars missing! PushProx Client won't be started."
+else
+  echo "AccurateScaler: Starting PushProx client ..."
+  pushprox-client --proxy-url="\$ACCURATE_SCALER_PROXY_URL" --fqdn "\${ACCURATE_SCALER_APP_ID}@\$(domainname -A):9394" &
 fi
 SH
 fi
