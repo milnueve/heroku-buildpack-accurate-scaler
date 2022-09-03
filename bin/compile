@@ -52,7 +52,8 @@ prometheus_exporter_path=$(bundle info prometheus_exporter --path)
 if [ "\$prometheus_exporter_path" != "" ]; then
   echo "Found in \$prometheus_exporter_path"
   echo "Starting prometheus_exporter ..."
-  bundle exec prometheus_exporter &
+  bundle binstub prometheus_exporter --force
+  $HOME/bin/prometheus_exporter &
 else
   echo "Not found! Please add: \"gem 'prometheus_exporter'\" to your Gemfile."
   exit 1
