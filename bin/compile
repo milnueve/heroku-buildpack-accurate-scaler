@@ -36,7 +36,7 @@ install_pushprox_client
 mkdir -p $BUILD_DIR/.profile.d
 
 if [ ! -f $BUILD_DIR/.profile.d/accurate-scaler.sh ]; then
-  arrow "Installing $BUILD_DIR/.profile.d/accurate-scaler.sh startup script ..."
+  arrow "Installing startup script ..."
   cat > $BUILD_DIR/.profile.d/accurate-scaler.sh <<-SH
 export PATH=\$PATH:\$HOME/bin
 
@@ -47,11 +47,15 @@ else
   echo "WARNING! PushProx Client not found. Buildpack failed to install correctly."
 fi
 
-if [ \$(bundle show prometheus_exporter) ]; then
+echo -n "Looking for 'prometheus_exporter' gem: "
+prometheus_exporter_path=$(bundle info prometheus_exporter --path)
+if [ "\$prometheus_exporter_path" != "" ]; then
+  echo "Found in \$prometheus_exporter_path"
   echo "Starting prometheus_exporter ..."
   bundle exec prometheus_exporter &
 else
-  echo "WARNING! Gem 'prometheus_exporter' was not found. Please add: \"gem 'prometheus_exporter'\" to your Gemfile."
+  echo "Not found! Please add: \"gem 'prometheus_exporter'\" to your Gemfile."
+  exit 1
 fi
 SH
 fi
