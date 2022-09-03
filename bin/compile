@@ -44,7 +44,7 @@ monitored_proctypes=\${ACCURATE_SCALER_MONITORED_PROCTYPES:-web worker}
 
 proctype() {
   for monitored_proctype in \$monitored_proctypes; do
-    if [[ \$DYNO =~ ^\$monitored_proctype.* ]]; then
+    if [ \$DYNO =~ ^\$monitored_proctype.* ]; then
       return \$monitored_proctype
     fi
   done
@@ -52,7 +52,7 @@ proctype() {
 }
 
 # Check if buildpack was correctly installed or exit with failure
-if [[ ! -x \$HOME/bin/pushprox-client ]]; then
+if [ ! -x \$HOME/bin/pushprox-client ]; then
   echo "PushProx Client not found. Buildpack failed to install correctly."
   exit 1
 fi
@@ -60,7 +60,7 @@ fi
 dyno_proctype=proctype
 
 # Check if dyno is running a monitored process type or notify and exit without failing
-if [[ "\$dyno_proctype" == "" ]]; then
+if [ "\$dyno_proctype" == "" ]; then
   echo "AccurateScaler: Dyno '\$DYNO' is not running a monitored process type, PushProx Client won't be started."
   exit 0
 fi
@@ -68,7 +68,7 @@ fi
 echo "AccurateScaler: Detected monitored '\$dyno_proctype' process type running in dyno."
 
 # Check if add-on is (correctly) installed or notify and exit without failing
-if [[ "\$ACCURATE_SCALER_PROXY_URL" != "" && "\$ACCURATE_SCALER_APP_ID" != ""]]; then
+if [ "\$ACCURATE_SCALER_PROXY_URL" != "" && "\$ACCURATE_SCALER_APP_ID" != "" ]; then
   echo "AccurateScaler: Starting PushProx client ..."
   pushprox-client --proxy-url=\${ACCURATE_SCALER_PROXY_URL} --fqdn "\${ACCURATE_SCALER_APP_ID}@\$(domainname -A):9394" &
 else
