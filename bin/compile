@@ -20,8 +20,8 @@ fetch_otelcol() {
     wget --quiet -O otcc.tar.gz https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v${OTCC_VERSION}/otelcol-contrib_${OTCC_VERSION}_linux_amd64.tar.gz
     tar -xzf otcc.tar.gz
 
-    rm -f $CACHE_DIR/otelcol-* || true
-    mv otelcol-contrib_${OTCC_VERSION}_linux_amd64/otelcol-contrib $CACHE_DIR/otelcol-contrib-${OTCC_VERSION}
+    rm -f $CACHE_DIR/* || true
+    mv otelcol-contrib $CACHE_DIR/otelcol-contrib-${OTCC_VERSION}
   else
     indent "OpenTelemetry Collector Contrib v${OTCC_VERSION} found in cache"
   fi
