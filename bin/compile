@@ -106,7 +106,7 @@ exporters:
       truncate_frequency: 2m
     resource_to_telemetry_conversion:
       enabled: true
-services:
+service:
   pipelines:
     metrics:
       receivers: [prometheus]
