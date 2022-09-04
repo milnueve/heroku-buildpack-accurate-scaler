@@ -101,7 +101,7 @@ exporters:
       accurate_scaler_app_id: "\$ACCURATE_SCALER_APP_ID"
       dyno: "\$DYNO:\$(hostname)"
     wal:
-      directory: "\$HOME/accurate-scaler/otelcol-contrib/prom_rw
+      directory: "\$HOME/accurate-scaler/otelcol-contrib/prom_rw"
       buffer_size: 600
       truncate_frequency: 2m
     resource_to_telemetry_conversion:
