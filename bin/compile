@@ -79,7 +79,7 @@ fi
 SH
 fi
 
-mkdir -p $BUILD_DIR/accurate-scaler/otelcol
+mkdir -p $BUILD_DIR/accurate-scaler/otelcol-contrib/prom_rw
 
 if [[ ! -f $BUILD_DIR/accurate-scaler/otelcol-contrib/config.yaml ]]; then
   arrow "Creating AccurateScaler OpenTelemetry Collector Contrib configuration file ..."
