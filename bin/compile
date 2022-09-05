@@ -88,12 +88,12 @@ receivers:
     config:
       scrape_configs:
         - job_name: "prometheus_exporter_gem"
-          scrape_interval: 5s
+          scrape_interval: 1s
           static_configs:
             - targets: ["localhost:9394"]
 processors:
   batch:
-    timeout: 10s
+    timeout: 5s
 exporters:
   prometheusremotewrite:
     endpoint: "\$ACCURATE_SCALER_PROM_WRITER_URL"
