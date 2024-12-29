@@ -1,10 +1,10 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
-OTCC_VERSION=0.59.0
+set -eo pipefail
 
 BUILD_DIR=$1
 CACHE_DIR=$2
-#ENV_DIR=$3
+# ENV_DIR=$3
 
 arrow() {
   echo '----->' "$@"
@@ -14,34 +14,51 @@ indent() {
   echo '      ' "$@"
 }
 
-fetch_otelcol() {
-  if [[ ! -f $CACHE_DIR/otelcol-contrib-${OTCC_VERSION} ]]; then
-    indent "Fetching OpenTelemetry Collector Contrib v${OTCC_VERSION} ..."
-    wget --quiet -O otcc.tar.gz https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v${OTCC_VERSION}/otelcol-contrib_${OTCC_VERSION}_linux_amd64.tar.gz
-    tar -xzf otcc.tar.gz
-    rm -f $CACHE_DIR/otelcol-contrib-* || true
-    mv otelcol-contrib $CACHE_DIR/otelcol-contrib-${OTCC_VERSION}
+get_latest_release() {
+  indent "Fetching latest release version..."
+  ACCURATE_SCALER_OTC_AGENT_VERSION=$(curl -sL -m 25 https://api.github.com/repos/milnueve/accurate-scaler-otelcol-agent/releases/latest | jq .name | tr -d '"' )
+  if [[ $ACCURATE_SCALER_OTC_AGENT_VERSION == "" ]]; then
+    indent "ERROR: Failed to fetch the latest version. Aborting buildpack installation."
+    exit 1
   else
-    indent "OpenTelemetry Collector Contrib v${OTCC_VERSION} found in cache"
+    indent "Latest version released: ${ACCURATE_SCALER_OTC_AGENT_VERSION}."
   fi
 }
 
-install_otel_collector() {
-  indent "Installing OpenTelemetry Collector Contrib at the destination folder"
-  cp $CACHE_DIR/otelcol-contrib-${OTCC_VERSION} $BUILD_DIR/bin/otelcol-contrib
-  chmod a+x $BUILD_DIR/bin/otelcol-contrib
+fetch_otelcol_agent() {
+  if [[ ! -f $CACHE_DIR/accurate-scaler/accurate-scaler-otelcol-agent-${ACCURATE_SCALER_OTC_AGENT_VERSION} ]]; then
+    if [[ -d $CACHE_DIR/accurate-scaler ]]; then
+      indent "Found an older version on the cache, removing it and downloading the latest version."
+      rm -f $CACHE_DIR/accurate-scaler/accurate-scaler-otelcol-agent*
+    fi
+    mkdir -p $CACHE_DIR/accurate-scaler
+    pushd $CACHE_DIR/accurate-scaler &>/dev/null
+    indent "Fetching AccurateScaler OTel Collector Agent ${ACCURATE_SCALER_OTC_AGENT_VERSION}..."
+    curl -sL -o accurate-scaler-otelcol-agent.tar.gz https://github.com/milnueve/accurate-scaler-otelcol-agent/releases/download/${ACCURATE_SCALER_OTC_AGENT_VERSION}/accurate-scaler-otelcol-agent_Linux_x86_64.tar.gz
+    tar -xzf accurate-scaler-otelcol-agent.tar.gz accurate-scaler-otelcol-agent
+    mv accurate-scaler-otelcol-agent accurate-scaler-otelcol-agent-${ACCURATE_SCALER_OTC_AGENT_VERSION}
+    rm -f accurate-scaler-otelcol-agent.tar.gz
+    popd &>/dev/null
+  else
+    indent "AccurateScaler OTel Collector Agent ${ACCURATE_SCALER_OTC_AGENT_VERSION} found in cache."
+  fi
 }
 
-arrow "OpenTelemetry Collector Contrib v${OTCC_VERSION} installation"
+install_otelcol_agent() {
+  indent "Installing AccurateScaler OTel Collector Agent at the destination folder."
+  cp $CACHE_DIR/accurate-scaler/accurate-scaler-otelcol-agent-${ACCURATE_SCALER_OTC_AGENT_VERSION} $BUILD_DIR/bin/accurate-scaler-otelcol-agent
+  chmod a+x $BUILD_DIR/bin/accurate-scaler-otelcol-agent
+}
+
+arrow "AccurateScaler OTel Collector Agent installation"
 mkdir -p "$BUILD_DIR/bin"
-fetch_otelcol
-install_otel_collector
+get_latest_release
+fetch_otelcol_agent
+install_otelcol_agent
 
+arrow "Installing startup script ..."
 mkdir -p $BUILD_DIR/.profile.d
-
-if [[ ! -f ${BUILD_DIR}/.profile.d/accurate-scaler.sh ]]; then
-  arrow "Installing startup script ..."
-  cat > ${BUILD_DIR}/.profile.d/accurate-scaler.sh <<-SH
+cat > ${BUILD_DIR}/.profile.d/accurate-scaler.sh <<-SH
 function proctype() {
   for monitored_proctype in \$monitored_proctypes; do
     if [[ \$DYNO =~ ^\$monitored_proctype.* ]]; then
@@ -51,10 +68,11 @@ function proctype() {
 }
 
 export PATH=\$PATH:\$HOME/bin
+export ACCURATE_SCALER_ADDON=\$(env | grep "^ACCURATE_SCALER.*_APP_ID=" | sed 's/^\\(ACCURATE_SCALER.*\\)_APP_ID.*$/\\1/g' || true)
 
 # Check if buildpack was correctly installed or exit with failure
-if [[ ! -x \$HOME/bin/otelcol-contrib ]]; then
-  echo "OpenTelemetry Collector Contrib not found. Buildpack failed to install correctly."
+if [[ ! -x \$HOME/bin/accurate-scaler-otelcol-agent ]]; then
+  echo "[accurate-scaler] ERROR: OTel Collector Agent not found. Buildpack failed to install correctly."
   exit 1
 fi
 
@@ -63,52 +81,66 @@ dyno_proctype=\$(proctype)
 
 # Check if dyno is running a monitored process type or notify and exit without failing
 if [[ \$dyno_proctype == "" ]]; then
-  echo "AccurateScaler: Dyno '\$DYNO' is not running a monitored process type, PushProx Client won't be started."
+  echo "[accurate-scaler] WARNING: Dyno '\$DYNO' is not running a monitored process type. OTel Collector Agent won't be started."
 else
-  echo "AccurateScaler: Detected monitored '\$dyno_proctype' process type running in dyno."
-
-  # Check if add-on is (correctly) installed or notify and exit without failing
-  if [[ \$ACCURATE_SCALER_PROM_WRITER_URL == "" || \$ACCURATE_SCALER_APP_ID == "" ]]; then
-    echo "AccurateScaler: Add-on config vars missing! OpenTelemetry Collector Contrib won't be started."
+  # Check if add-on is (correctly) installed or notify and exit with error.
+  if [[ \$ACCURATE_SCALER_ADDON == "" ]]; then
+    echo "[accurate-scaler] ERROR: Add-on config vars missing. OTel Collector Agent won't be started."
   else
-    echo "AccurateScaler: Starting OpenTelemetry Collector Contrib ..."
-    otelcol-contrib --config=file:\$HOME/accurate-scaler/otelcol-contrib/config.yaml &
+    echo "[accurate-scaler] Starting OTel Collector Agent..."
+    accurate-scaler-otelcol-agent --config=file:\$HOME/accurate-scaler/otelcol-agent-config.yaml &
   fi
 fi
 SH
-fi
 
-mkdir -p $BUILD_DIR/accurate-scaler/otelcol-contrib/prom_rw
+arrow "Creating AccurateScaler OTel Collector Agent configuration file..."
+mkdir -p $BUILD_DIR/accurate-scaler
+cat > $BUILD_DIR/accurate-scaler/otelcol-agent-config.yaml <<-YAML
+extensions:
+  oauth2client:
+    client_id: "\${\${ACCURATE_SCALER_ADDON}_OAUTH_CLIENT_ID"
+    client_secret: "\${\${ACCURATE_SCALER_ADDON}_OAUTH_CLIENT_SECRET}"
+    token_url: "\${\${ACCURATE_SCALER_ADDON}_OAUTH_TOKEN_URL}"
 
-if [[ ! -f $BUILD_DIR/accurate-scaler/otelcol-contrib/config.yaml ]]; then
-  arrow "Creating AccurateScaler OpenTelemetry Collector Contrib configuration file ..."
-  cat > $BUILD_DIR/accurate-scaler/otelcol-contrib/config.yaml <<-YAML
 receivers:
   prometheus:
     config:
       scrape_configs:
         - job_name: "prometheus_exporter_gem"
-          scrape_interval: 1s
+          scrape_interval: 15s
           static_configs:
             - targets: ["localhost:9394"]
+
 processors:
   batch:
-    timeout: 5s
+    timeout: 30s
+
+  metricstransform:
+    transforms:
+      - include: .*
+        match_type: regexp
+        action: update
+        operations:
+          - action: add_label
+            new_label: instance_id
+            new_value: "\${DYNO}"
+          - action: add_label
+            new_label: accurate_scaler_app_id
+            new_value: "\${\${ACCURATE_SCALER_ADDON}_APP_ID}"
+
 exporters:
-  prometheusremotewrite:
-    endpoint: "\$ACCURATE_SCALER_PROM_WRITER_URL"
+  otlp:
+    endpoint: "\${\${ACCURATE_SCALER_ADDON}_OTELCOL_URL}"
     tls:
-      insecure: true
-    external_labels:
-      accurate_scaler_app_id: "\$ACCURATE_SCALER_APP_ID"
-      dyno: "\${DYNO}"
-    resource_to_telemetry_conversion:
-      enabled: true
+      insecure: false
+    auth:
+      authenticator: oauth2client
+
 service:
+  extensions: [oauth2client]
   pipelines:
     metrics:
       receivers: [prometheus]
-      processors: [batch]
-      exporters: [prometheusremotewrite]
+      processors: [batch, metricstransform]
+      exporters: [otlp]
 YAML
-fi
