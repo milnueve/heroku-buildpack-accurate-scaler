@@ -98,7 +98,7 @@ mkdir -p $BUILD_DIR/accurate-scaler
 cat > $BUILD_DIR/accurate-scaler/otelcol-agent-config.yaml <<-YAML
 extensions:
   oauth2client:
-    client_id: "\${\${ACCURATE_SCALER_ADDON}_OAUTH_CLIENT_ID"
+    client_id: "\${\${ACCURATE_SCALER_ADDON}_OAUTH_CLIENT_ID}"
     client_secret: "\${\${ACCURATE_SCALER_ADDON}_OAUTH_CLIENT_SECRET}"
     token_url: "\${\${ACCURATE_SCALER_ADDON}_OAUTH_TOKEN_URL}"
 
