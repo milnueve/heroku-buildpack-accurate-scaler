@@ -142,5 +142,5 @@ service:
     metrics:
       receivers: [prometheus]
       processors: [batch, metricstransform]
-      exporters: [otlp]
+      exporters: [otlphttp]
 YAML
