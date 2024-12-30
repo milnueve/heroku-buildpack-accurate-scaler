@@ -129,7 +129,7 @@ processors:
             new_value: "\${\${ACCURATE_SCALER_ADDON}_APP_ID}"
 
 exporters:
-  otlp:
+  otlphttp:
     endpoint: "\${\${ACCURATE_SCALER_ADDON}_OTELCOL_URL}"
     tls:
       insecure: false
